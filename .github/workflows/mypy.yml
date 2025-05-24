@@ -1,0 +1,185 @@
+name: MyPy
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  mypy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10.6"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      run: poetry install --no-interaction
+    
+    - name: Find Python files
+      run: |
+        echo "Python files to be checked:"
+        if [ -d "multi_agent" ]; then
+          find multi_agent -name "*.py" -type f | head -10
+        else
+          echo "multi_agent directory not found"
+        fi
+        if [ -d "server" ]; then
+          find server -name "*.py" -type f | head -10
+        else
+          echo "server directory not found"
+        fi
+    
+    - name: Run MyPy Type Checking (STRICT)
+      run: |
+        echo "🔍 Running MyPy Type Checking with ZERO TOLERANCE..."
+        DIRS=""
+        if [ -d "multi_agent" ]; then
+          DIRS="$DIRS multi_agent/"
+        fi
+        if [ -d "server" ]; then
+          DIRS="$DIRS server/"
+        fi
+        
+        if [ -n "$DIRS" ]; then
+          echo "Type checking directories: $DIRS"
+          
+          # Run mypy and capture output
+          echo "🔬 Running mypy type checking..."
+          if poetry run mypy $DIRS --config-file=pyproject.toml 2>&1 | tee mypy-output.txt; then
+            echo "✅ MYPY TYPE CHECK PASSED - No type errors found! 🎉"
+            TYPE_CHECK_SUCCESS=true
+          else
+            echo "❌ MYPY TYPE CHECK FAILED!"
+            TYPE_CHECK_SUCCESS=false
+          fi
+          
+          # Count errors from output
+          ERROR_COUNT=$(grep -c "error:" mypy-output.txt || echo "0")
+          WARNING_COUNT=$(grep -c "warning:" mypy-output.txt || echo "0")
+          NOTE_COUNT=$(grep -c "note:" mypy-output.txt || echo "0")
+          
+          echo "📊 MyPy Results:"
+          echo "   Errors: $ERROR_COUNT"
+          echo "   Warnings: $WARNING_COUNT" 
+          echo "   Notes: $NOTE_COUNT"
+          
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "❌ TYPE CHECK FAILED!"
+            echo "🎯 REQUIREMENT: Zero type errors allowed"
+            echo "📋 Please fix all type errors before merging"
+            echo ""
+            echo "💡 Common type issues:"
+            echo "   - Missing type annotations"
+            echo "   - Incompatible types in assignments"
+            echo "   - Missing return type annotations"
+            echo "   - Incorrect import statements"
+            exit 1
+          elif [ "$WARNING_COUNT" -gt 0 ]; then
+            echo "⚠️  Type warnings found, but no errors"
+            echo "✅ MYPY PASSED - No critical type errors! 🎉"
+          else
+            echo "✅ PERFECT TYPE CHECKING - No issues found! 🎉"
+          fi
+        else
+          echo "❌ No directories found to analyze"
+          exit 1
+        fi
+    
+    - name: Generate MyPy Reports
+      if: always()
+      run: |
+        echo "📄 Generating detailed MyPy reports..."
+        DIRS=""
+        if [ -d "multi_agent" ]; then
+          DIRS="$DIRS multi_agent/"
+        fi
+        if [ -d "server" ]; then
+          DIRS="$DIRS server/"
+        fi
+        
+        if [ -n "$DIRS" ]; then
+          # Generate various format reports
+          echo "Generating JSON report..."
+          poetry run mypy $DIRS --config-file=pyproject.toml --json-report=mypy-json-report || true
+          
+          echo "Generating HTML report..."  
+          poetry run mypy $DIRS --config-file=pyproject.toml --html-report=mypy-html-report || true
+          
+          echo "Generating text report..."
+          poetry run mypy $DIRS --config-file=pyproject.toml > mypy-text-report.txt 2>&1 || true
+          
+          echo "Reports generated successfully"
+        else
+          echo "No files to check" > mypy-text-report.txt
+          mkdir -p mypy-json-report mypy-html-report
+        fi
+    
+    - name: Display Type Check Summary
+      if: always()
+      run: |
+        echo "📊 MyPy Type Check Summary"
+        
+        if [ -f mypy-output.txt ]; then
+          ERROR_COUNT=$(grep -c "error:" mypy-output.txt || echo "0")
+          WARNING_COUNT=$(grep -c "warning:" mypy-output.txt || echo "0")
+          
+          echo "📈 Statistics:"
+          echo "   Type Errors: $ERROR_COUNT"
+          echo "   Type Warnings: $WARNING_COUNT"
+          
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo ""
+            echo "🚨 Type errors found (first 10):"
+            grep "error:" mypy-output.txt | head -10
+          elif [ "$WARNING_COUNT" -gt 0 ]; then
+            echo ""
+            echo "⚠️  Type warnings (first 5):"
+            grep "warning:" mypy-output.txt | head -5
+          else
+            echo "🎉 PERFECT TYPE SAFETY!"
+          fi
+        fi
+        
+        echo ""
+        echo "💡 Quick type fixes:"
+        echo "   - Add type hints: def func(x: int) -> str:"
+        echo "   - Import types: from typing import List, Dict, Optional"
+        echo "   - Use --strict mode for better type safety"
+    
+    - name: Upload MyPy Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: mypy-reports
+        path: |
+          mypy-output.txt
+          mypy-text-report.txt
+          mypy-json-report/
+          mypy-html-report/ 

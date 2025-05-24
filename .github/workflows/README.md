@@ -1,68 +1,184 @@
-# GitHub Workflows
+# GitHub Workflows - Code Quality Suite
 
-## Pylint Workflow - STRICT MODE
+## 🔥 STRICT MODE - ZERO TOLERANCE QUALITY CONTROL
 
-### Mô tả
-Workflow này chạy pylint với **YÊU CẦU NGHIÊM NGẶT 10/10** để kiểm tra chất lượng code Python. Workflow sẽ **FAIL** nếu score không đạt 10.00/10.
+Bộ workflows này đảm bảo **CHẤT LƯỢNG CODE HOÀN HẢO** với requirement nghiêm ngặt:
+- ✅ **CHỈ PASS KHI TẤT CẢ TOOLS ĐẠT ĐIỂM TUYỆT ĐỐI**
+- ❌ **FAIL KHI CÓ BẤT KỲ WARNING/ERROR NÀO**
 
-### ⚠️ REQUIREMENT NGHIÊM NGẶT
-- **CHỈ PASS KHI SCORE = 10.00/10** ✅
-- **FAIL KHI SCORE < 10.00/10** ❌
-- Không chấp nhận code có bất kỳ warning hay error nào
+## 📋 Available Workflows
 
-### Cấu hình
-- **Python version**: 3.10.6 (khớp chính xác với `pyproject.toml`)
-- **Dependency management**: Poetry với caching để tăng tốc
-- **Target directories**: `multi_agent/` và `server/` (với kiểm tra tồn tại)
-- **Pylint config**: Tự động detect từ `pyproject.toml`
-- **Score check**: Sử dụng Python để so sánh floating point chính xác
+### 1. 🏆 **Code Quality (All-in-One)** - `code-quality.yml`
+**WORKFLOW CHÍNH - RECOMMENDED** 
+- Chạy **TẤT CẢ** tools cùng lúc: Ruff + MyPy + Pylint
+- **Fastest execution** - chỉ 1 job setup
+- **Comprehensive report** - tất cả results trong 1 chỗ
+- **Fail-fast** - dừng ngay khi có lỗi đầu tiên
 
-### Khi nào workflow chạy
-- Push vào **tất cả các branch**
-- **Tất cả pull request** (bất kể target branch)
+### 2. 📊 **Pylint** - `pylint.yml`
+**CODE QUALITY ANALYSIS**
+- ✅ **PASS**: Score = 10.00/10
+- ❌ **FAIL**: Score < 10.00/10
+- Sử dụng config từ `pyproject.toml`
 
-### Behavior
-- ✅ **Pass**: Khi score = 10.00/10 → Tích xanh
-- ❌ **Fail**: Khi score < 10.00/10 → Tích đỏ, block merge
-- 🔍 **Strict validation**: Không có tolerance cho bất kỳ issue nào
+### 3. 🎨 **Ruff** - `ruff.yml`
+**FORMATTING & LINTING**
+- ✅ **PASS**: Zero linting issues + perfect formatting
+- ❌ **FAIL**: Any format or lint violations
+- Fast Rust-based checker
 
-### Output
-- **Score display**: Hiển thị score thực tế vs requirement
-- **Detailed issues**: List tất cả issues cần fix (nếu có)
-- **JSON + Text reports**: Upload như artifacts để review
-- **Helpful hints**: Gợi ý cách fix các lỗi thường gặp
+### 4. 🔬 **MyPy** - `mypy.yml`
+**TYPE SAFETY**
+- ✅ **PASS**: Zero type errors
+- ❌ **FAIL**: Any type violations
+- Generates JSON, HTML, text reports
 
-### Common Issues & Fixes
-- **Missing newline**: Thêm dòng trống cuối file
-- **Import order**: Sử dụng isort hoặc sắp xếp imports
-- **Missing docstrings**: Thêm docstring cho functions/classes
-- **Naming conventions**: Follow PEP8 naming
+## ⚡ **BEHAVIOR**
 
-### Ignore patterns (từ pyproject.toml)
-- `tests/`
-- `.venv/`
-- `.mypy_cache/`
-- `.ruff_cache/`
-- `server_old/`
+### 🎯 Strict Requirements
+| Tool | Requirement | Action if Failed |
+|------|-------------|-----------------|
+| **Ruff Format** | Perfect formatting | ❌ Block merge |
+| **Ruff Lint** | Zero violations | ❌ Block merge |
+| **MyPy** | Zero type errors | ❌ Block merge |
+| **Pylint** | Score = 10.00/10 | ❌ Block merge |
 
-### Disabled rules (từ pyproject.toml)
-- `too-many-instance-attributes`
-- `import-error`
-- `too-few-public-methods`
-- `missing-module-docstring`
-- và nhiều rules khác...
+### 🔄 Workflow Triggers
+**TẤT CẢ workflows chạy khi:**
+- Push vào **bất kỳ branch nào**
+- **Bất kỳ pull request nào**
 
-### Cách xem kết quả
-1. Vào tab "Actions" trong GitHub repository
-2. Check status: ✅ = Perfect, ❌ = Needs work
-3. Click vào workflow run để xem chi tiết
-4. Download artifacts để xem full report
+## 🚀 **GETTING STARTED**
 
-### Cách đạt 10/10
-1. Chạy local: `poetry run pylint multi_agent/ server/`
-2. Fix tất cả issues được báo cáo
-3. Verify score = 10.00/10 trước khi push
-4. Push code và workflow sẽ pass với tích xanh
+### Option 1: Use All-in-One (Recommended)
+```bash
+# Check all tools locally before pushing
+poetry run ruff format multi_agent/ server/
+poetry run ruff check multi_agent/ server/ --fix
+poetry run mypy multi_agent/ server/
+poetry run pylint multi_agent/ server/
+```
 
-### Cách customize
-Để thay đổi cấu hình pylint, chỉnh sửa phần `[tool.pylint]` trong `pyproject.toml`. Workflow sẽ tự động sử dụng cấu hình mới. 
+### Option 2: Individual Tools
+```bash
+# Format code
+poetry run ruff format multi_agent/ server/
+
+# Check linting  
+poetry run ruff check multi_agent/ server/
+
+# Type checking
+poetry run mypy multi_agent/ server/
+
+# Quality score
+poetry run pylint multi_agent/ server/
+```
+
+## 🎉 **SUCCESS OUTPUT**
+Khi tất cả pass, bạn sẽ thấy:
+```
+🎉 ==============================================
+🏆 ALL CODE QUALITY CHECKS PASSED!
+==============================================
+✅ Ruff Format: PERFECT
+✅ Ruff Linting: CLEAN  
+✅ MyPy Types: SAFE
+✅ Pylint Score: 10/10
+==============================================
+🚀 Code is ready for merge! 🚀
+==============================================
+```
+
+## 📊 **CONFIGURATION**
+
+### Python Version
+- **3.10.6** (khớp chính xác với `pyproject.toml`)
+
+### Target Directories
+- `multi_agent/`
+- `server/`
+
+### Config Files
+- **Pylint**: `[tool.pylint]` trong `pyproject.toml`
+- **Ruff**: `[tool.ruff]` trong `pyproject.toml`  
+- **MyPy**: `[tool.mypy]` trong `pyproject.toml`
+
+## 🛠️ **COMMON FIXES**
+
+### Ruff Issues
+```bash
+# Auto-format
+poetry run ruff format .
+
+# Auto-fix linting
+poetry run ruff check . --fix
+```
+
+### MyPy Issues
+```bash
+# Add type hints
+def function(param: int) -> str:
+    return str(param)
+
+# Import types
+from typing import List, Dict, Optional
+```
+
+### Pylint Issues
+```bash
+# Missing newline at EOF
+echo "" >> file.py
+
+# Import order
+# Use isort or rearrange imports
+
+# Add docstrings
+def function():
+    """Function description."""
+    pass
+```
+
+## 📈 **REPORTS & ARTIFACTS**
+
+### Individual Workflows
+- `pylint-report` - JSON + text reports
+- `ruff-reports` - JSON + text reports
+- `mypy-reports` - JSON + HTML + text reports
+
+### All-in-One Workflow
+- `all-quality-reports` - Comprehensive reports from all tools
+
+## 🎯 **WORKFLOW RECOMMENDATIONS**
+
+### For Daily Development
+- **Use All-in-One workflow** - fastest and most comprehensive
+
+### For Debugging Specific Issues
+- **Use individual workflows** - detailed focus on specific tool
+
+### For CI/CD Pipeline
+- **Disable individual workflows** if using All-in-One
+- Or **keep both** for redundancy
+
+## ⚠️ **IMPORTANT NOTES**
+
+1. **Zero Tolerance**: No warnings or errors allowed
+2. **Perfect Scores Only**: Pylint must be exactly 10.00/10
+3. **Type Safety**: All type annotations required for MyPy
+4. **Consistent Formatting**: Ruff format enforced strictly
+
+## 🔧 **TROUBLESHOOTING**
+
+### Workflow Fails?
+1. Run tools locally first
+2. Fix all reported issues
+3. Verify all tools pass with 0 issues
+4. Push clean code
+
+### Multiple Tools Failing?
+1. Start with **Ruff format** - fixes formatting
+2. Then **Ruff check** - fixes basic linting
+3. Then **MyPy** - adds type hints
+4. Finally **Pylint** - ensures perfect score
+
+**🎯 Remember: Only PERFECT code gets merged!** 🚀 
