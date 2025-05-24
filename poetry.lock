@@ -21,7 +21,7 @@ version = "0.4.6"
 description = "Cross-platform colored terminal text."
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
-groups = ["dev"]
+groups = ["main", "dev"]
 markers = "sys_platform == \"win32\""
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
@@ -61,6 +61,25 @@ typing-extensions = {version = ">=4.6.0", markers = "python_version < \"3.13\""}
 
 [package.extras]
 test = ["pytest (>=6)"]
+
+[[package]]
+name = "honcho"
+version = "2.0.0"
+description = "Honcho: a Python clone of Foreman. For managing Procfile-based applications."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "honcho-2.0.0-py3-none-any.whl", hash = "sha256:56dcd04fc72d362a4befb9303b1a1a812cba5da283526fbc6509be122918ddf3"},
+    {file = "honcho-2.0.0.tar.gz", hash = "sha256:af3815c03c634bf67d50f114253ea9fef72ecff26e4fd06b29234789ac5b8b2e"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+docs = ["sphinx"]
+export = ["jinja2 (>=3.1.2,<4)"]
 
 [[package]]
 name = "iniconfig"
@@ -390,4 +409,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "3.10.6"
-content-hash = "769a9278c526440d40fe83bfa401c4ea189a29b2e5a35b8cd0ee70db9914ee44"
+content-hash = "95883a8264032dd4d01548c548534f1f3faad2ef7ef99eaf1fbae6985747f838"
