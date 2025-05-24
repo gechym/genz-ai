@@ -1,8 +1,6 @@
-# .PHONY: run_all
-# run_all:
-# 	# chmod +x start_all.sh
-# 	# ./start_all.sh
-# 	poetry run honcho start
+.PHONY: run_all
+run_all:
+	poetry run honcho start
 
 # .PHONY: run_api
 # run_api:
