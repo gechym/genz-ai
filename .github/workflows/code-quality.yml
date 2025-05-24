@@ -5,7 +5,9 @@ on:
   pull_request:
 
 jobs:
-  code-quality:
+  # Job 1: Ruff - Format và Linting
+  ruff-check:
+    name: 🎨 Ruff (Format & Lint)
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -67,99 +69,259 @@ jobs:
         echo "TARGET_DIRS=$DIRS" >> $GITHUB_ENV
         echo "📁 Target directories: $DIRS"
     
-    - name: 🎨 Ruff Format Check
+    - name: 🎨 Ruff Format Check (STRICT)
       run: |
-        echo "🎨 Running Ruff Format Check (STRICT)..."
+        echo "🎨 Running Ruff Format Check - ZERO TOLERANCE..."
         if poetry run ruff format --check $TARGET_DIRS; then
-          echo "✅ RUFF FORMAT: PASSED"
+          echo "✅ RUFF FORMAT: PERFECT FORMATTING!"
         else
-          echo "❌ RUFF FORMAT: FAILED"
-          echo "💡 Fix: poetry run ruff format $TARGET_DIRS"
+          echo "❌ RUFF FORMAT: FAILED!"
+          echo "🎯 REQUIREMENT: All code must be perfectly formatted"
+          echo "💡 Fix command: poetry run ruff format $TARGET_DIRS"
           exit 1
         fi
     
-    - name: 🔍 Ruff Linting Check
+    - name: 🔍 Ruff Linting Check (STRICT)
       run: |
-        echo "🔍 Running Ruff Linting (STRICT)..."
+        echo "🔍 Running Ruff Linting - ZERO VIOLATIONS..."
         if poetry run ruff check $TARGET_DIRS --output-format=full; then
-          echo "✅ RUFF LINTING: PASSED"
+          echo "✅ RUFF LINTING: NO VIOLATIONS FOUND!"
         else
-          echo "❌ RUFF LINTING: FAILED"
-          echo "💡 Fix: poetry run ruff check $TARGET_DIRS --fix"
+          echo "❌ RUFF LINTING: FAILED!"
+          echo "🎯 REQUIREMENT: Zero linting violations allowed"
+          echo "💡 Fix command: poetry run ruff check $TARGET_DIRS --fix"
           exit 1
         fi
     
-    - name: 🔬 MyPy Type Check
+    - name: Generate Ruff Reports
+      if: always()
       run: |
-        echo "🔬 Running MyPy Type Check (STRICT)..."
-        if poetry run mypy $TARGET_DIRS --config-file=pyproject.toml 2>&1 | tee mypy-output.txt; then
-          ERROR_COUNT=$(grep -c "error:" mypy-output.txt || echo "0")
-          if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "❌ MYPY: FAILED ($ERROR_COUNT errors)"
-            exit 1
-          else
-            echo "✅ MYPY: PASSED"
-          fi
-        else
-          echo "❌ MYPY: FAILED"
-          exit 1
-        fi
+        echo "📄 Generating Ruff reports..."
+        poetry run ruff check $TARGET_DIRS --output-format=json > ruff-report.json || true
+        echo "Ruff reports generated"
     
-    - name: 📊 Pylint Score Check
+    - name: Upload Ruff Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ruff-reports
+        path: ruff-report.json
+
+  # Job 2: Pylint - Code Quality Score
+  pylint-check:
+    name: 📊 Pylint (Score 10/10)
+    runs-on: ubuntu-latest
+    needs: ruff-check  # Chỉ chạy khi Ruff pass
+    strategy:
+      matrix:
+        python-version: ["3.10.6"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      run: poetry install --no-interaction
+    
+    - name: Set Target Directories
       run: |
-        echo "📊 Running Pylint Score Check (STRICT 10/10)..."
+        DIRS=""
+        if [ -d "multi_agent" ]; then
+          DIRS="$DIRS multi_agent/"
+        fi
+        if [ -d "server" ]; then
+          DIRS="$DIRS server/"
+        fi
+        echo "TARGET_DIRS=$DIRS" >> $GITHUB_ENV
+    
+    - name: 📊 Pylint Score Check (STRICT 10/10)
+      run: |
+        echo "📊 Running Pylint - PERFECT SCORE REQUIRED..."
         poetry run pylint $TARGET_DIRS --output-format=text | tee pylint-output.txt
         
         SCORE=$(grep "Your code has been rated at" pylint-output.txt | sed 's/.*rated at \([0-9.]*\).*/\1/' || echo "0")
-        echo "📊 Pylint Score: $SCORE/10"
+        echo "📊 Current Score: $SCORE/10"
         
         IS_PERFECT=$(python3 -c "import sys; score = float('$SCORE' if '$SCORE' else '0'); print('1' if score == 10.0 else '0')")
         
         if [ "$IS_PERFECT" = "1" ]; then
-          echo "✅ PYLINT: PERFECT SCORE (10/10)"
+          echo "✅ PYLINT: PERFECT SCORE ACHIEVED! 🏆"
+          echo "🎉 Code quality is flawless!"
         else
-          echo "❌ PYLINT: FAILED ($SCORE/10)"
+          echo "❌ PYLINT: FAILED! Score $SCORE/10 is not perfect!"
           echo "🎯 REQUIREMENT: Must achieve exactly 10.00/10"
+          echo "📋 Please fix all pylint issues before proceeding"
+          echo ""
+          echo "💡 Common fixes needed:"
+          echo "   - Add missing newlines at end of files"
+          echo "   - Fix import order and formatting"  
+          echo "   - Add missing docstrings"
+          echo "   - Follow naming conventions"
           exit 1
         fi
     
-    - name: 🎉 All Quality Checks Passed
+    - name: Generate Pylint Reports
+      if: always()
+      run: |
+        echo "📄 Generating Pylint reports..."
+        poetry run pylint $TARGET_DIRS --exit-zero --output-format=json > pylint-report.json || true
+        echo "Pylint reports generated"
+    
+    - name: Upload Pylint Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pylint-reports
+        path: |
+          pylint-output.txt
+          pylint-report.json
+
+  # Job 3: MyPy - Type Safety
+  mypy-check:
+    name: 🔬 MyPy (Type Safety)
+    runs-on: ubuntu-latest
+    needs: pylint-check  # Chỉ chạy khi Pylint pass
+    strategy:
+      matrix:
+        python-version: ["3.10.6"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      run: poetry install --no-interaction
+    
+    - name: Set Target Directories
+      run: |
+        DIRS=""
+        if [ -d "multi_agent" ]; then
+          DIRS="$DIRS multi_agent/"
+        fi
+        if [ -d "server" ]; then
+          DIRS="$DIRS server/"
+        fi
+        echo "TARGET_DIRS=$DIRS" >> $GITHUB_ENV
+    
+    - name: 🔬 MyPy Type Check (STRICT)
+      run: |
+        echo "🔬 Running MyPy Type Check - ZERO ERRORS..."
+        if poetry run mypy $TARGET_DIRS --config-file=pyproject.toml 2>&1 | tee mypy-output.txt; then
+          ERROR_COUNT=$(grep -c "error:" mypy-output.txt || echo "0")
+          WARNING_COUNT=$(grep -c "warning:" mypy-output.txt || echo "0")
+          
+          echo "📊 MyPy Results:"
+          echo "   Type Errors: $ERROR_COUNT"
+          echo "   Type Warnings: $WARNING_COUNT"
+          
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "❌ MYPY: FAILED! ($ERROR_COUNT type errors found)"
+            echo "🎯 REQUIREMENT: Zero type errors allowed"
+            echo "📋 Type errors found:"
+            grep "error:" mypy-output.txt | head -10
+            echo ""
+            echo "💡 Common type fixes:"
+            echo "   - Add type hints: def func(x: int) -> str:"
+            echo "   - Import types: from typing import List, Dict, Optional"
+            echo "   - Fix incompatible type assignments"
+            exit 1
+          else
+            echo "✅ MYPY: PERFECT TYPE SAFETY! 🛡️"
+            if [ "$WARNING_COUNT" -gt 0 ]; then
+              echo "⚠️  Note: $WARNING_COUNT warnings found (but no errors)"
+            else
+              echo "🎉 Zero type issues found!"
+            fi
+          fi
+        else
+          echo "❌ MYPY: FAILED!"
+          echo "🎯 REQUIREMENT: Type checking must pass without errors"
+          exit 1
+        fi
+    
+    - name: Generate MyPy Reports
+      if: always()
+      run: |
+        echo "📄 Generating MyPy reports..."
+        poetry run mypy $TARGET_DIRS --config-file=pyproject.toml --json-report=mypy-json-report || true
+        poetry run mypy $TARGET_DIRS --config-file=pyproject.toml > mypy-text-report.txt 2>&1 || true
+        echo "MyPy reports generated"
+    
+    - name: Upload MyPy Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: mypy-reports
+        path: |
+          mypy-output.txt
+          mypy-text-report.txt
+          mypy-json-report/
+
+  # Final Success Job
+  quality-success:
+    name: 🎉 All Quality Checks Passed
+    runs-on: ubuntu-latest
+    needs: [ruff-check, pylint-check, mypy-check]  # Chỉ chạy khi TẤT CẢ pass
+    
+    steps:
+    - name: 🏆 Celebrate Perfect Code Quality
       run: |
         echo "🎉 =============================================="
         echo "🏆 ALL CODE QUALITY CHECKS PASSED!"
         echo "=============================================="
         echo "✅ Ruff Format: PERFECT"
         echo "✅ Ruff Linting: CLEAN"  
-        echo "✅ MyPy Types: SAFE"
         echo "✅ Pylint Score: 10/10"
+        echo "✅ MyPy Types: SAFE"
         echo "=============================================="
         echo "🚀 Code is ready for merge! 🚀"
-        echo "=============================================="
-    
-    - name: Generate All Reports
-      if: always()
-      run: |
-        echo "📄 Generating comprehensive reports..."
-        
-        # Pylint reports
-        poetry run pylint $TARGET_DIRS --exit-zero --output-format=json > all-pylint-report.json || true
-        
-        # Ruff reports  
-        poetry run ruff check $TARGET_DIRS --output-format=json > all-ruff-report.json || true
-        
-        # MyPy reports
-        poetry run mypy $TARGET_DIRS --config-file=pyproject.toml --json-report=all-mypy-json || true
-        
-        echo "All reports generated successfully"
-    
-    - name: Upload All Quality Reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: all-quality-reports
-        path: |
-          pylint-output.txt
-          mypy-output.txt
-          all-pylint-report.json
-          all-ruff-report.json
-          all-mypy-json/ 
+        echo "🎯 ZERO TOLERANCE QUALITY ACHIEVED!"
+        echo "==============================================" 
