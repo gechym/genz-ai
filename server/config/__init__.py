@@ -6,6 +6,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     """Settings class to load environment variables."""
+
     _env_file: str = ".env"
     _env_file_encoding: str = "utf-8"
 
