@@ -1,0 +1,120 @@
+name: Pylint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10.6"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      id: setup-python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      run: poetry install --no-interaction
+    
+    - name: Find Python files
+      run: |
+        echo "Python files to be checked:"
+        if [ -d "multi_agent" ]; then
+          find multi_agent -name "*.py" -type f | head -10
+        else
+          echo "multi_agent directory not found"
+        fi
+        if [ -d "server" ]; then
+          find server -name "*.py" -type f | head -10
+        else
+          echo "server directory not found"
+        fi
+    
+    - name: Run Pylint on multi_agent
+      run: |
+        if [ -d "multi_agent" ]; then
+          echo "Running pylint on multi_agent directory..."
+          poetry run pylint multi_agent/ --exit-zero --output-format=colorized
+        else
+          echo "Skipping multi_agent - directory not found"
+        fi
+    
+    - name: Run Pylint on server
+      run: |
+        if [ -d "server" ]; then
+          echo "Running pylint on server directory..."
+          poetry run pylint server/ --exit-zero --output-format=colorized
+        else
+          echo "Skipping server - directory not found"
+        fi
+    
+    - name: Run Pylint with JSON output for artifacts
+      run: |
+        echo "Generating pylint report..."
+        DIRS=""
+        if [ -d "multi_agent" ]; then
+          DIRS="$DIRS multi_agent/"
+        fi
+        if [ -d "server" ]; then
+          DIRS="$DIRS server/"
+        fi
+        if [ -n "$DIRS" ]; then
+          poetry run pylint $DIRS --exit-zero --output-format=json > pylint-report.json || true
+          echo "Pylint analysis completed. Check the report for details."
+        else
+          echo "No directories found to analyze"
+          echo "[]" > pylint-report.json
+        fi
+    
+    - name: Display Pylint summary
+      run: |
+        if [ -f pylint-report.json ]; then
+          echo "Pylint report generated successfully"
+          # Show basic stats if jq is available
+          if command -v jq &> /dev/null; then
+            MESSAGES_COUNT=$(cat pylint-report.json | jq '. | length')
+            echo "Number of messages: $MESSAGES_COUNT"
+            if [ "$MESSAGES_COUNT" -gt 0 ]; then
+              echo "Issues found by pylint - check the detailed report"
+            else
+              echo "No issues found by pylint - great job! 🎉"
+            fi
+          else
+            echo "jq not available - cannot show detailed stats"
+          fi
+        else
+          echo "No pylint report generated"
+        fi
+    
+    - name: Upload pylint report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: pylint-report
+        path: pylint-report.json 
