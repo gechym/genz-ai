@@ -56,27 +56,9 @@ jobs:
           echo "server directory not found"
         fi
     
-    - name: Run Pylint on multi_agent
+    - name: Run Pylint with Score Check
       run: |
-        if [ -d "multi_agent" ]; then
-          echo "Running pylint on multi_agent directory..."
-          poetry run pylint multi_agent/ --exit-zero --output-format=colorized
-        else
-          echo "Skipping multi_agent - directory not found"
-        fi
-    
-    - name: Run Pylint on server
-      run: |
-        if [ -d "server" ]; then
-          echo "Running pylint on server directory..."
-          poetry run pylint server/ --exit-zero --output-format=colorized
-        else
-          echo "Skipping server - directory not found"
-        fi
-    
-    - name: Run Pylint with JSON output for artifacts
-      run: |
-        echo "Generating pylint report..."
+        echo "🔍 Running Pylint with STRICT 10/10 requirement..."
         DIRS=""
         if [ -d "multi_agent" ]; then
           DIRS="$DIRS multi_agent/"
@@ -84,32 +66,73 @@ jobs:
         if [ -d "server" ]; then
           DIRS="$DIRS server/"
         fi
+        
+        if [ -n "$DIRS" ]; then
+          # Run pylint and capture output
+          echo "Checking directories: $DIRS"
+          poetry run pylint $DIRS --output-format=text | tee pylint-output.txt
+          
+          # Extract score using Python for reliable floating point comparison
+          SCORE=$(grep "Your code has been rated at" pylint-output.txt | sed 's/.*rated at \([0-9.]*\).*/\1/' || echo "0")
+          echo "📊 Pylint Score: $SCORE/10"
+          
+          # Use Python to check if score is exactly 10.00
+          IS_PERFECT=$(python3 -c "import sys; score = float('$SCORE' if '$SCORE' else '0'); print('1' if score == 10.0 else '0')")
+          
+          if [ "$IS_PERFECT" = "1" ]; then
+            echo "✅ PERFECT SCORE! Code quality is 10/10! 🎉"
+            echo "🚀 All checks passed - ready for merge!"
+          else
+            echo "❌ FAILED: Score $SCORE/10 is not perfect!"
+            echo "🎯 REQUIREMENT: Must achieve exactly 10.00/10 to pass"
+            echo "📋 Please fix all pylint issues before merging"
+            echo ""
+            echo "💡 Common fixes needed:"
+            echo "   - Add missing newlines at end of files"
+            echo "   - Fix import order and formatting"
+            echo "   - Add missing docstrings"
+            echo "   - Follow naming conventions"
+            exit 1
+          fi
+        else
+          echo "❌ No directories found to analyze"
+          exit 1
+        fi
+    
+    - name: Generate JSON Report
+      if: always()
+      run: |
+        echo "📄 Generating detailed JSON report..."
+        DIRS=""
+        if [ -d "multi_agent" ]; then
+          DIRS="$DIRS multi_agent/"
+        fi
+        if [ -d "server" ]; then
+          DIRS="$DIRS server/"
+        fi
+        
         if [ -n "$DIRS" ]; then
           poetry run pylint $DIRS --exit-zero --output-format=json > pylint-report.json || true
-          echo "Pylint analysis completed. Check the report for details."
         else
-          echo "No directories found to analyze"
           echo "[]" > pylint-report.json
         fi
     
-    - name: Display Pylint summary
+    - name: Display Detailed Results
+      if: always()
       run: |
         if [ -f pylint-report.json ]; then
-          echo "Pylint report generated successfully"
-          # Show basic stats if jq is available
+          echo "📊 Pylint Analysis Complete"
           if command -v jq &> /dev/null; then
             MESSAGES_COUNT=$(cat pylint-report.json | jq '. | length')
-            echo "Number of messages: $MESSAGES_COUNT"
-            if [ "$MESSAGES_COUNT" -gt 0 ]; then
-              echo "Issues found by pylint - check the detailed report"
+            echo "Total issues found: $MESSAGES_COUNT"
+            
+            if [ "$MESSAGES_COUNT" -eq 0 ]; then
+              echo "🎉 NO ISSUES FOUND - PERFECT CODE!"
             else
-              echo "No issues found by pylint - great job! 🎉"
+              echo "🚨 Issues that need to be fixed:"
+              cat pylint-report.json | jq '.[] | "\(.path):\(.line):\(.column): \(.message-id): \(.message)"' -r | head -10
             fi
-          else
-            echo "jq not available - cannot show detailed stats"
           fi
-        else
-          echo "No pylint report generated"
         fi
     
     - name: Upload pylint report
@@ -117,4 +140,6 @@ jobs:
       if: always()
       with:
         name: pylint-report
-        path: pylint-report.json 
+        path: |
+          pylint-report.json
+          pylint-output.txt 
