@@ -1,0 +1,88 @@
+[tool.poetry]
+name = "genzai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "3.10.6"
+
+
+[tool.poetry.group.dev.dependencies]
+pylint = ">=3.3.7"
+mypy = ">=1.15.0"
+pytest = ">=8.3.5"
+"pytest-asyncio" = ">=0.26.0"
+ruff = ">=0.11.9"
+pycowsay = ">=0.0.0.2"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 200
+output-format = "concise"
+show-fixes = true
+unsafe-fixes = false
+preview = true
+exclude = ["tutorials/", "tests/" , ".venv" , ".mypy_cache/" , ".ruff_cache/", "server_old/"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "B",
+    "UP",
+    "I",
+    "Q",
+    "W",
+]
+unfixable = ["B"]
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "double"
+
+[tool.pylint]
+disable = [
+    "too-many-instance-attributes",
+    "import-error",
+    "too-few-public-methods",
+    "too-many-return-statements",
+    "missing-module-docstring",
+    "missing-function-docstring",
+    "missing-class-docstring",
+    "too-many-locals",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "import-outside-toplevel",
+    "cyclic-import",
+    "redefined-builtin",
+    "broad-exception-caught",
+    "broad-exception-raised",
+    "super-init-not-called",
+    "duplicate-code",
+    "fixme",
+    "logging-fstring-interpolation"
+]
+reports = false
+max-branches=20
+output-format = "colorized"
+max-line-length = 200
+class-const-naming-style = "PascalCase"
+ignore-patterns = ["tests/", "migrations/", ".venv/" , ".mypy_cache/", ".ruff_cache/"]
+ignore-paths = ["tests/", "migrations/", ".venv/" , ".mypy_cache/", ".ruff_cache/"]
+
+[tool.pylint.DESIGN]
+max-statements = 70
+
+[tool.mypy]
+no_implicit_optional = false
+disallow_untyped_decorators = false
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_return_any = true
+warn_no_return = false
+warn_unreachable = true
+strict = true
+disallow_subclassing_any = false
+strict_optional = true
