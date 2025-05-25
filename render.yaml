@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: genzai-api
+    runtime: python
+    plan: free
+    buildCommand: poetry install --only=main
+    startCommand: poetry run uvicorn server.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10.6"
+      - key: PYTHONPATH
+        value: "./" 
