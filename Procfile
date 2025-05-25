@@ -1,2 +1,1 @@
-api: export PYTHONPATH=./ && python3 server/main.py
-web: export PYTHONPATH=./ && adk web
+web: export PYTHONPATH=./ && adk web --port $PORT
