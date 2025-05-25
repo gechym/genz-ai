@@ -3,9 +3,7 @@ from google.adk.agents import Agent
 tam_an_agent: Agent = Agent(
     name="tam_an_agent",
     model="gemini-2.0-flash",
-    description=(
-        "Bạn là trợ lý ảo hổ trợ metal-health"
-    ),
+    description=("Bạn là trợ lý ảo hổ trợ metal-health"),
     instruction=(
         "Bạn là một trợ lý tâm lý thông minh và đầy thấu cảm. Nhiệm vụ của bạn là:"
         "\n1. Lắng nghe và thấu hiểu những khó khăn, lo lắng của người dùng"

@@ -2,18 +2,6 @@
 run_all:
 	poetry run honcho start
 
-# .PHONY: run_api
-# run_api:
-# 	 export PYTHONPATH=./ && poetry run python server/main.py
-
-# .PHONY: run_web
-# run_web:
-# 	export PYTHONPATH=./ && adk web --port 8080 --session_db_url=sqlite:///./database_session.db
-
-# .PHONY: run_celery
-# run_celery:
-# 	export PYTHONPATH=./ && python server/start_celery.py
-
 .PHONY: install
 install:
 	@echo "🚀 Installing environment"
@@ -26,9 +14,6 @@ install:
 fix:
 	@echo "🚀 Fixing with ruff"
 	poetry run ruff check --fix
-
-.PHONY: format
-format:
 	@echo "🚀 Formatting with ruff"
 	poetry run ruff format
 
@@ -36,6 +21,8 @@ format:
 lint:
 	@echo "🚀 Fixing with ruff"
 	poetry run ruff check --fix
+	@echo "🚀 Formatting with ruff"
+	poetry run ruff format
 	@echo "🚀 Checking poetry.lock file"
 	poetry check --lock
 	@echo "🚀 Linting with ruff"
