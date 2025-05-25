@@ -2,7 +2,7 @@
 name = "genzai"
 version = "0.1.0"
 description = "Add your description here"
-authors = ["nguyenducbaocv@gmail.com"]
+authors = ["Gechim <nguyenducbaocv@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
