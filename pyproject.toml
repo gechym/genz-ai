@@ -10,6 +10,7 @@ python = "3.10.6"
 honcho = ">=2.0.0"
 fastapi = "^0.115.12"
 uvicorn = "^0.34.2"
+google-adk = "^1.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
