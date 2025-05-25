@@ -10,3 +10,7 @@ services:
         value: "3.10.6"
       - key: PYTHONPATH
         value: "./" 
+      - key: GOOGLE_API_KEY
+        value: "AIzaSyD-9tS6dFyEK2q6W1hjlS9i-8k823ZHWI"
+      - key: GOOGLE_GENAI_USE_VERTEXAI
+        value: "FALSE"
