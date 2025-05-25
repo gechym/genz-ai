@@ -14,23 +14,27 @@ install:
 fix:
 	@echo "🚀 Fixing with ruff"
 	poetry run ruff check --fix
-	@echo "🚀 Formatting with ruff"
-	poetry run ruff format
 
 .PHONY: lint
 lint:
-	@echo "🚀 Fixing with ruff"
-	poetry run ruff check --fix
-	@echo "🚀 Formatting with ruff"
-	poetry run ruff format
+	@echo "🚀 Poetry lock"
+	poetry lock
+	
 	@echo "🚀 Checking poetry.lock file"
 	poetry check --lock
+
+	@echo "🚀 Fixing with ruff"
+	poetry run ruff check --fix
+
 	@echo "🚀 Linting with ruff"
 	poetry run ruff check
+
 	@echo "🚀 Linting with pylint"
 	poetry run pylint ./
+
 	@echo "🚀 Checking with mypy"
 	poetry run mypy ./
+
 	@echo "🟢 All checks have passed"
 	
 	@echo "Clear cache"

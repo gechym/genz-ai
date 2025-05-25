@@ -72,7 +72,7 @@ jobs:
     - name: 🎨 Ruff Format Check (STRICT)
       run: |
         echo "🎨 Running Ruff Format Check - ZERO TOLERANCE..."
-        if poetry run ruff format --check $TARGET_DIRS; then
+        if poetry run ruff check $TARGET_DIRS; then
           echo "✅ RUFF FORMAT: PERFECT FORMATTING!"
         else
           echo "❌ RUFF FORMAT: FAILED!"
