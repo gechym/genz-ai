@@ -1,4 +1,4 @@
-name: Code Quality (All-in-One)
+name: Code Quality
 
 on:
   push:
